@@ -1,10 +1,15 @@
-obj-m := demo_chr_dev.o
-KERNELDIR := /root/HZero/os/linux-4.0
-PWD := $(shell pwd)
-
-default:
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-
+KVERS = $(shell uname -r)
+ 
+# Kernel modules
+#   
+obj-m += demo_chr_dev.o
+#   
+# Specify flags for the module compilation.
+  
+#EXTRA_CFLAGS=-g -O0
+   
+build: kernel_modules
+kernel_modules:
+	make -C /lib/modules/$(KVERS)/build M=$(CURDIR) modules
 clean:
-	rm -f *.o *.ko *.mod.c
-.PHNEY: clean
+	make -C /lib/modules/$(KVERS)/build M=$(CURDIR) clean
