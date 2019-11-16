@@ -1,0 +1,10 @@
+.gitignore
+*.ko
+*.ko.cmd
+*.mod.o.cmd
+*.o.cmd
+*/Module.symvers
+*/modules.order
+*/.cache.mk
+*/.tmp_versions/
+tags
