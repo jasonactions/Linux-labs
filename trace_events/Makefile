@@ -1,4 +1,4 @@
-obj-m   += waitqueue.o
+obj-m   += test_trace_event.o
 
 #KDIR    := /lib/modules/$(shell uname -r)/build
 KDIR    := /home/ubuntu/qemu/linux
