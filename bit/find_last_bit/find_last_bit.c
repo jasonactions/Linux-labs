@@ -4,15 +4,15 @@
 
 static int __init find_last_bit_init(void)
 {
-	unsigned long tmp = 0x10;
+	unsigned long tmp = 0x101;
 	int tag;
 	/* 
 	 * retrun the last bit which was set
 	 * if all the bits are not be set, return the position of msb.
 	 */
 	tag = find_last_bit(&tmp, 32);
+	printk(KERN_INFO "find_last_bit_init :%d(%lx)\n", tag, tmp);
 
-	printk(KERN_INFO "find_last_bit_init tag:%d\n", tag);
 	return 0;
 }
 
