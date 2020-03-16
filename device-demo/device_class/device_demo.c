@@ -34,15 +34,22 @@ static int device_demo_init_and_add(struct device *dev_demo,
 
 static int __init device_demo_init(void)
 {
+	/* create /sys/class/class_demo */
 	class_demo = class_create(THIS_MODULE, "class-demo");
 	if (!class_demo) {
 		printk(KERN_ERR "create class demo fail!");
 		return -1;
 	}
+	/* create /sys/devices/dev-demo */
 	device_demo_init_and_add(&dev_demo, "dev-demo", NULL, NULL);
+	/* 1.parent null and class null: /sys/devices/dev-demo_noClass-noParen */
 	device_demo_init_and_add(&dev_demo3_1, "dev-demo_noClass-noParent", NULL, NULL);
+	/* 2.class null: /sys/devices/dev-demo/dev-demo_parent*/
 	device_demo_init_and_add(&dev_demo3_2, "dev-demo_parent", &dev_demo, NULL);
+	/* 3. parent null: dev-demo_class -> ../../devices/virtual/class-demo/dev-demo_class under 
+	 *   /sys/class/class-demo */
 	device_demo_init_and_add(&dev_demo3_3, "dev-demo_class", NULL, class_demo);
+	/* 4. class and parent not null, but parent->class null: /sys/devices/dev-demo/class-demo/dev-demo_class-parent*/
 	device_demo_init_and_add(&dev_demo3_4, "dev-demo_class-parent", &dev_demo, class_demo);
 
 	return 0;
