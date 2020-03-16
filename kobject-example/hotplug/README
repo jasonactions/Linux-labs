@@ -1,0 +1,4 @@
+1. cat /dev/null  > /var/log/syslog
+2. insmod linux-labs/kobject-example/kset_init_register/kset.ko
+3. cat /var/log/syslog
+
