@@ -7,6 +7,7 @@
 /*定义哈希桶的数量*/
 #define  CMD_HASH_HEAD_SIZE        27
 
+/*哈希表头（哈希桶）的宿主结构体*/
 typedef struct cmd_hash_head {
 	struct	hlist_head head; /*哈希桶的首地址*/
 	
@@ -15,40 +16,36 @@ typedef struct cmd_hash_head {
 	int16_t	count;	/* 当前哈希桶中节点的个数*/
 } cmd_hash_head_t;
 
-
+/*哈希节点的宿主结构体*/
 typedef struct cmd_hash_node {
 	struct hlist_node node;
-	int8_t		name[20];
+	char		name[20];
 } cmd_hash_node_t;
 
 
 /*定义CMD_HASH_HEAD_SIZE大小的哈希桶*/
 static cmd_hash_head_t	cmd_hash[CMD_HASH_HEAD_SIZE];
-cmd_hash_node_t *hash_node;
 
-/*对哈希桶进行初始化*/
+/*对哈希表头（哈希桶）的宿主结构体初始化*/
 static void cmd_hash_init(void)
 {
 	int32_t index = 0;
 	
 	memset(cmd_hash, 0, sizeof(cmd_hash));
 	
-	for (index = 0; index < (CMD_HASH_HEAD_SIZE - 1); index++) {
+	for (index = 0; index < CMD_HASH_HEAD_SIZE; index++) {
 		INIT_HLIST_HEAD(&cmd_hash[index].head);
 		cmd_hash[index].count	= 0;
 		cmd_hash[index].offset	= index;
-		cmd_hash[index].ch	= 'a' + index;
+		if (index == CMD_HASH_HEAD_SIZE)
+			cmd_hash[index].ch = '?';
+		else
+			cmd_hash[index].ch = 'a' + index;
 	}    
-	
-	index = CMD_HASH_HEAD_SIZE - 1;
-	INIT_HLIST_HEAD(&cmd_hash[index].head);
-	cmd_hash[index].count	= 0;
-	cmd_hash[index].offset	= index;
-	cmd_hash[index].ch		= '?';
 }
 
 
-/*散列表*/
+/*散列表,用于查找哈希桶*/
 static int8_t node_type(int8_t *name)
 {
     int8_t    ch         = 0x00;
@@ -95,16 +92,17 @@ static int8_t node_type(int8_t *name)
     return offset;    
 }
 
-static void hash_node_init(int8_t *name)
+static void __cmd_hash_node_add(char *name)
 {
-	int8_t        offset = 0;
+	int8_t offset = 0;
 	
-	hash_node = kzalloc(sizeof(cmd_hash_node_t), GFP_KERNEL); 
+	cmd_hash_node_t *hash_node 
+		= kzalloc(sizeof(cmd_hash_node_t), GFP_KERNEL); 
 	
 	offset = node_type(name);
 	if(offset < 0)    return;
 	
-	strlcpy(hash_node->name, name, strlen((char*)name));
+	strlcpy(hash_node->name, name, strlen(name));
 	cmd_hash[offset].count++;
 	
 	INIT_HLIST_NODE(&hash_node->node);
@@ -112,59 +110,71 @@ static void hash_node_init(int8_t *name)
 }
 
 
-static void cmd_hash_node_init(void)
+static void cmd_hash_node_add(void)
 {
-	hash_node_init((int8_t*)"hello");
-	hash_node_init((int8_t*)"help");
-	hash_node_init((int8_t*)"scan");
-	hash_node_init((int8_t*)"???");
+	__cmd_hash_node_add("hello");
+	__cmd_hash_node_add("help");
+	__cmd_hash_node_add("scan");
+	__cmd_hash_node_add("???");
 }
 
-static void cmd_hash_node_show(void)
+static void cmd_hash_node_dump(void)
 {
 	int32_t index = 0;
 	int16_t count = 0;
 	
 	cmd_hash_node_t *cmd_hnode = NULL;
 	
-	printk("=============current bucket\n");
+	printk("=============hlist===============\n");
 	
 	for (index = 0; index < CMD_HASH_HEAD_SIZE; index++) {
 		count = cmd_hash[index].count;
 		if (count <= 0)
 			continue;
 
-		printk("hash%d, count : %d,offset : %d, ch : %c\n",
+		printk("(%d) \tcount:%d, \toffset:%d, \tch:%c\n",
 			index,
 			cmd_hash[index].count,
 			cmd_hash[index].offset,
 			cmd_hash[index].ch);
 			
 		hlist_for_each_entry(cmd_hnode, &cmd_hash[index].head, node)
-			printk("name : %s\n", cmd_hnode->name);
-		printk("\n");
+			printk("name:%s\n", cmd_hnode->name);
 	}
 }
 
-static void test_hlist_oper(void)
-{
-	cmd_hash_init();
-	cmd_hash_node_init();
-	cmd_hash_node_show();    
-}
 
+static void cmd_hash_cleanup(void)
+{
+	int32_t index = 0;
+	int32_t count = 0;
+	cmd_hash_node_t *cmd_hnode;
+	struct hlist_node *n;
+
+	for (index = 0; index < CMD_HASH_HEAD_SIZE; index++) {
+		count = cmd_hash[index].count;
+		if (count <= 0 )
+			continue;
+
+		hlist_for_each_entry_safe(cmd_hnode, n, &cmd_hash[index].head, node) {
+			hlist_del(&(cmd_hnode->node));
+			kfree(cmd_hnode);
+		}
+	}
+}
 
 static int __init hlist_init(void)
 {
-	test_hlist_oper();
+	cmd_hash_init();
+	cmd_hash_node_add();
+	cmd_hash_node_dump();
 
 	return 0;
 }
 
 static void __exit hlist_exit(void)
 {
-	kfree(hash_node);
-
+	cmd_hash_cleanup();
 }
 
 module_init(hlist_init);
