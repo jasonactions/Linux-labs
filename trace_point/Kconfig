@@ -1,0 +1,5 @@
+config SAMPLE_TRACEPOINTS
+        tristate "Build tracepoints examples -- loadable modules only"
+        depends on TRACEPOINTS && m
+        help
+          This build tracepoints example modules.

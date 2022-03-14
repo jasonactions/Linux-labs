@@ -19,11 +19,17 @@ DEFINE_TRACE(subsys_event,
 
 struct proc_dir_entry *pentry_sample;
 
+void my_subsys_event(void *__data, struct inode *inode, struct file *file)
+{
+	printk("inode: 0x%lx, file: 0x%lx\n", (unsigned long)inode, (unsigned long)file);
+
+}
+
 static int my_open(struct inode *inode, struct file *file)
 {
 	trace_subsys_event(inode, file);
 	
-	return -EPERM;
+	return 0;
 }
 
 static const struct proc_ops mark_ops = {
@@ -34,10 +40,13 @@ static const struct proc_ops mark_ops = {
 static int __init sample_init(void)
 {
 	printk(KERN_ALERT "sample init\n");
-	pentry_sample = proc_create("tracepoint-sample", 0644, NULL,
+	pentry_sample = proc_create("tracepoint-sample", 0, NULL,
 		&mark_ops);
 	if (!pentry_sample)
 		return -EPERM;
+
+	register_trace_subsys_event(my_subsys_event, NULL);
+
 	return 0;
 }
 
